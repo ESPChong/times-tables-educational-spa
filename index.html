@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Say It Back · talking times-tables practice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Lexend:wght@300..700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F4EDDA; --paper-hi:#FFFDF4; --ink:#2B2620; --ink-soft:#6E6558;
+    --accent:#C4452A; --green:#2F6B4F; --amber:#B9861B;
+    --shadow:0 12px 26px -16px rgba(43,38,32,.4);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:'Lexend',sans-serif; color:var(--ink); background:var(--paper);
+    -webkit-font-smoothing:antialiased; overflow-x:hidden; min-height:100vh;
+  }
+  ::selection{background:var(--accent);color:#FFF8EE}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+  /* ---- paper backdrop ---- */
+  .paper-noise{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");}
+  .margin-line{position:fixed;top:0;bottom:0;left:clamp(58px,7vw,92px);width:2px;background:rgba(196,69,42,.32);z-index:0}
+  .holes{position:fixed;left:calc(clamp(58px,7vw,92px)/2 - 10px);top:0;bottom:0;display:flex;flex-direction:column;justify-content:space-evenly;z-index:0}
+  .holes span{width:20px;height:20px;border-radius:50%;background:#EBE1CA;
+    box-shadow:inset 0 2px 5px rgba(43,38,32,.3), inset 0 -1px 0 rgba(255,255,255,.55)}
+
+  .wrap{position:relative;z-index:1;max-width:940px;margin:0 auto;padding:18px clamp(18px,6vw,96px) 46px}
+
+  /* ---- top bar ---- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    padding:10px 0 14px;border-bottom:2px solid var(--ink);margin-bottom:8px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:'Fraunces',serif;font-style:italic;
+    font-weight:640;font-size:22px;letter-spacing:.01em}
+  .brand svg{display:block}
+  .ticks{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:center}
+  .ticks.hidden{visibility:hidden}
+  .tick{width:15px;height:15px;border-radius:50%;border:2px solid rgba(43,38,32,.38);transition:background .25s,border-color .25s}
+  .tick.current{border-color:var(--ink);animation:tickPulse 1.6s infinite}
+  .tick.retest{border-color:var(--accent)}
+  .tick.firsttry{background:var(--green);border-color:var(--green)}
+  .tick.fixed{background:var(--amber);border-color:var(--amber)}
+  .tick.miss{border-color:var(--accent)}
+  @keyframes tickPulse{0%,100%{box-shadow:0 0 0 2px rgba(43,38,32,.08)}50%{box-shadow:0 0 0 5px rgba(43,38,32,.15)}}
+  .controls{display:flex;gap:8px}
+  .iconbtn{width:42px;height:42px;display:grid;place-items:center;background:var(--paper-hi);
+    border:2px solid var(--ink);border-radius:12px 10px 13px 11px;cursor:pointer;color:var(--ink);
+    box-shadow:2px 3px 0 rgba(43,38,32,.22);transition:transform .12s,background .15s,color .15s}
+  .iconbtn:hover{background:var(--ink);color:var(--paper-hi);transform:translateY(-1px)}
+  .iconbtn:active{transform:translateY(1px);box-shadow:none}
+  .iconbtn svg.hidden{display:none}
+  .iconbtn.gone{display:none}
+
+  /* ---- shared scene ---- */
+  main{display:flex;flex-direction:column;gap:30px;margin-top:22px}
+  .duo{display:flex;align-items:center;gap:30px}
+  .abi-wrap{flex:0 0 auto;width:228px}
+  #abi{display:block;width:100%;height:auto}
+  .bubble{position:relative;flex:1;background:var(--paper-hi);border:2.5px solid var(--ink);
+    border-radius:18px 22px 16px 24px;padding:20px 24px;min-height:118px;display:flex;align-items:center;
+    box-shadow:var(--shadow)}
+  .bubble .tail{position:absolute;left:-12px;top:42%;width:16px;height:16px;background:var(--paper-hi);
+    border-left:2.5px solid var(--ink);border-bottom:2.5px solid var(--ink);transform:rotate(45deg)}
+  #bubbleText{font-size:18.5px;line-height:1.6;width:100%}
+  #bubbleText .w{opacity:0;transition:opacity .14s}
+  #bubbleText .w.on{opacity:1}
+
+  .panel{animation:rise .35s ease both}
+  .panel.hidden{display:none}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+  /* ---- setup panel ---- */
+  .setup{text-align:center;padding-top:6px}
+  .setup h1{font-family:'Fraunces',serif;font-weight:620;font-size:clamp(30px,4.6vw,42px);letter-spacing:.005em}
+  .squiggle{display:block;margin:6px auto 16px;width:min(240px,70%)}
+  .lede{color:var(--ink-soft);font-size:16.5px;max-width:520px;margin:0 auto 26px;line-height:1.65}
+  .lede strong{color:var(--ink);font-weight:600}
+  .tables{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:8px}
+  .tbl{min-width:52px;height:52px;padding:0 14px;font:600 22px 'Fraunces',serif;color:var(--ink);
+    background:var(--paper-hi);border:2px solid var(--ink);border-radius:14px 12px 15px 11px;cursor:pointer;
+    box-shadow:2px 3px 0 rgba(43,38,32,.2);transition:all .12s}
+  .tbl:hover{transform:translateY(-2px)}
+  .tbl.sel{background:var(--ink);color:var(--paper-hi);transform:translateY(2px);box-shadow:none}
+  .tbl.wide{font:600 15px 'Lexend',sans-serif}
+  .picknote{font-size:13px;color:var(--ink-soft);margin-bottom:22px}
+  .capline{font-size:13.5px;color:var(--ink-soft);margin:16px auto 4px;max-width:480px;line-height:1.6}
+  .capline .sub{opacity:.85}
+
+  .btn{font:600 15px 'Lexend',sans-serif;color:var(--ink);background:var(--paper-hi);
+    border:2px solid var(--ink);border-radius:13px 11px 14px 12px;padding:12px 20px;cursor:pointer;
+    box-shadow:2px 3px 0 rgba(43,38,32,.22);transition:transform .12s,background .15s,color .15s}
+  .btn:hover{background:var(--ink);color:var(--paper-hi);transform:translateY(-1px)}
+  .btn:active{transform:translateY(1px);box-shadow:none}
+  .btn:disabled{opacity:.4;pointer-events:none}
+  .btn.primary{background:var(--accent);color:#FFF6EC}
+  .btn.primary:hover{background:#A93722;color:#FFF6EC}
+  .btn.ghost{box-shadow:none;border-color:rgba(43,38,32,.5);font-size:13.5px;padding:9px 14px}
+  .btn.ghost:hover{background:var(--ink);color:var(--paper-hi)}
+
+  details.teachers{max-width:620px;margin:34px auto 0;text-align:left;background:var(--paper-hi);
+    border:2px solid var(--ink);border-radius:14px 16px 13px 17px;padding:14px 18px}
+  details.teachers summary{cursor:pointer;font-weight:600;font-size:15px;list-style-position:inside}
+  details.teachers p{font-size:14px;line-height:1.7;color:var(--ink-soft);margin-top:12px}
+  details.teachers p strong{color:var(--ink)}
+  details.teachers .map{border-left:3px solid var(--accent);padding-left:12px}
+
+  /* ---- play panel ---- */
+  .equation-row{position:relative;text-align:center;padding:6px 0 2px}
+  .equation{font-family:'Fraunces',serif;font-variation-settings:'opsz' 144;font-weight:600;
+    font-size:clamp(54px,10vw,92px);display:inline-flex;align-items:baseline;gap:.32em;letter-spacing:.02em}
+  .equation .op{color:var(--ink-soft);font-weight:500}
+  .answrap{position:relative;display:inline-block;min-width:1.7em;text-align:center;
+    border-bottom:5px dotted rgba(43,38,32,.35);padding:0 .1em}
+  .ans{color:var(--ink-soft);transition:color .3s}
+  .ans.shown{color:var(--green)}
+  .ans.shown.wrong{color:var(--accent)}
+  .ring{position:absolute;left:50%;top:50%;width:118%;height:150%;overflow:visible;pointer-events:none;
+    transform:translate(-50%,-54%) rotate(-3deg)}
+  .ring ellipse{fill:none;stroke:var(--accent);stroke-width:4.5;stroke-linecap:round;
+    stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset .55s ease .05s}
+  .equation-row.ok .ring ellipse{stroke:var(--green)}
+  .ring.drawn ellipse{stroke-dashoffset:0}
+  .ring.noanim ellipse{transition:none}
+  .stamp{position:absolute;right:4%;top:-16px;width:88px;height:88px;opacity:0;pointer-events:none;transform:rotate(-9deg)}
+  .stamp.show{animation:stampIn .34s cubic-bezier(.2,1.5,.4,1) forwards}
+  @keyframes stampIn{0%{opacity:0;transform:scale(1.9) rotate(-17deg)}60%{opacity:1;transform:scale(.92) rotate(-6deg)}100%{opacity:1;transform:scale(1) rotate(-9deg)}}
+  .equation-row.shake{animation:shake .3s}
+  @keyframes shake{0%,100%{transform:none}25%{transform:translate(2px,1px)}50%{transform:translate(-2px,-1px)}75%{transform:translate(1px,2px)}}
+
+  .answerzone{text-align:center;margin-top:6px}
+  .micline{display:flex;gap:14px;align-items:center;justify-content:center;min-height:42px;flex-wrap:wrap}
+  .micpill{display:inline-flex;align-items:center;gap:9px;border:2px solid var(--ink);border-radius:999px;
+    padding:8px 16px;background:var(--paper-hi);font:600 14px 'Lexend',sans-serif;color:var(--ink);
+    cursor:pointer;transition:all .15s}
+  .micpill[data-state="live"]{background:var(--accent);color:#FFF6EC}
+  .micpill[data-state="off"]{opacity:.65}
+  .micpill:hover{transform:translateY(-1px)}
+  #liveText{font-size:15px;color:var(--ink-soft);font-style:italic;min-height:22px;max-width:300px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #wave{display:block;margin:6px auto 14px}
+  #answerForm{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  #answerForm.shake{animation:shake .3s}
+  #answerInput{font:600 21px 'Fraunces',serif;text-align:center;width:230px;padding:10px 14px;
+    border:2.5px solid var(--ink);border-radius:12px 14px 12px 15px;background:var(--paper-hi);
+    color:var(--ink);outline:none}
+  #answerInput::placeholder{font:400 15px 'Lexend',sans-serif;color:var(--ink-soft)}
+  #answerInput:focus{box-shadow:3px 4px 0 rgba(43,38,32,.2)}
+  .mini-actions{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+
+  /* ---- end panel ---- */
+  .endpanel{text-align:center}
+  .endpanel h2{font-family:'Fraunces',serif;font-weight:640;font-size:34px}
+  .scoreline{font-family:'Fraunces',serif;font-weight:620;font-size:72px;line-height:1;margin:14px 0 4px}
+  .scoreline .of{font-size:34px;color:var(--ink-soft)}
+  .scorecap{color:var(--ink-soft);font-size:14.5px;margin-bottom:24px}
+  .factwrap{max-width:380px;margin:0 auto 12px;text-align:left}
+  .factwrap h3{font-size:14px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-soft);
+    margin-bottom:10px;font-weight:600}
+  .factlist{list-style:none}
+  .factlist li{display:flex;align-items:baseline;gap:10px;font-family:'Fraunces',serif;font-size:24px;
+    font-weight:560;padding:5px 0}
+  .factlist i{flex:1;border-bottom:3px dotted rgba(43,38,32,.35)}
+  .factlist .fv{color:var(--green)}
+  .end-actions{display:flex;gap:12px;justify-content:center;margin-top:26px;flex-wrap:wrap}
+  .allclear{font-size:15px;color:var(--green);font-weight:600;margin-bottom:8px}
+  .factwrap.hidden, .allclear.hidden, #btnRetry.hidden{display:none}
+
+  footer{margin-top:44px;padding-top:14px;border-top:1.5px solid rgba(43,38,32,.3);
+    font-size:12px;color:var(--ink-soft);text-align:center;line-height:1.7}
+
+  #toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,16px);z-index:50;background:var(--ink);
+    color:var(--paper-hi);padding:12px 18px;border-radius:12px 14px 12px 15px;font-size:14px;max-width:min(90vw,460px);
+    text-align:center;opacity:0;pointer-events:none;transition:all .3s;box-shadow:var(--shadow)}
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+
+  /* ---- Abi moods ---- */
+  #abi .brow,#abi .eye,#abi .eye-dot,#abi .cheek,#abi #mouthSmile{transform-box:fill-box;transform-origin:center}
+  #abi .brow{transition:transform .25s ease}
+  #abi .eye-dot{transition:transform .15s,opacity .15s}
+  #abi .eye-happy{opacity:0;transition:opacity .15s}
+  #abi .cheek{transition:opacity .3s}
+  #abi[data-mood="listen"] .brow{transform:translateY(-4px)}
+  #abi[data-mood="listen"] .eye-dot{transform:scale(1.22)}
+  #abi[data-mood="happy"] .brow{transform:translateY(-5px)}
+  #abi[data-mood="happy"] .eye-dot{opacity:0}
+  #abi[data-mood="happy"] .eye-happy{opacity:1}
+  #abi[data-mood="happy"] .cheek{opacity:.3}
+  #abi[data-mood="happy"] #mouthSmile{transform:scale(1.15) translateY(1px)}
+  #abi[data-mood="gentle"] #browL{transform:rotate(-9deg) translateY(-1px)}
+  #abi[data-mood="gentle"] #browR{transform:rotate(9deg) translateY(-1px)}
+  #abi[data-mood="think"] .eye-dot{transform:translate(-2px,-2.5px)}
+  #abi.blink .eye-dot{transform:scaleY(.12)}
+
+  @media (max-width:840px){
+    .duo{flex-direction:column;gap:12px}
+    .abi-wrap{width:170px}
+    .bubble{min-height:96px;min-width:100%}
+  }
+  @media (max-width:640px){
+    .holes,.margin-line{display:none}
+    .brand span{display:none}
+    #bubbleText{font-size:16.5px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .tick.current{animation:none}
+    .panel{animation:none}
+  }
+</style>
+</head>
+<body>
+<div class="paper-noise"></div>
+<div class="margin-line"></div>
+<div class="holes"><span></span><span></span><span></span></div>
+
+<div class="wrap">
+
+  <header class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+        <rect x="1.5" y="3" width="21" height="18" rx="4.5" fill="none" stroke="currentColor" stroke-width="2"/>
+        <line x1="4" y1="9" x2="20" y2="9" stroke="currentColor" stroke-width="1.6"/>
+        <line x1="4" y1="15" x2="20" y2="15" stroke="currentColor" stroke-width="1.6"/>
+        <circle cx="7" cy="9" r="2.1" fill="#C4452A"/><circle cx="13" cy="15" r="2.1" fill="#C4452A"/>
+        <circle cx="17" cy="9" r="2.1" fill="currentColor"/>
+      </svg>
+      <span>Say it back</span>
+    </div>
+    <div class="ticks hidden" id="ticks" aria-label="Round progress"></div>
+    <div class="controls">
+      <button class="iconbtn" id="btnSound" title="Sound on / off" aria-label="Toggle sound">
+        <svg id="icoSound" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>
+        <svg id="icoMute" class="hidden" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><line x1="17" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="17" y2="15"/></svg>
+      </button>
+      <button class="iconbtn" id="btnRestart" title="Start over" aria-label="Start over">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a8 8 0 1 1 2.2 6.6"/><polyline points="4 5.5 4 11 9.5 11"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- one scene: Abi + speech bubble, always present -->
+    <section class="duo">
+      <div class="abi-wrap">
+        <svg id="abi" viewBox="0 0 240 268" data-mood="idle" aria-hidden="true" focusable="false">
+          <g id="abiRoot">
+            <g stroke="#2B2620" stroke-width="5" stroke-linecap="round" fill="none">
+              <path d="M78 196 L56 252"/><path d="M162 196 L184 252"/><path d="M100 226 L140 226"/>
+            </g>
+            <rect x="20" y="22" width="200" height="176" rx="20" fill="#FFFDF4" stroke="#2B2620" stroke-width="5"/>
+            <g stroke="#2B2620" stroke-width="3" stroke-linecap="round" opacity=".5">
+              <line x1="36" y1="86" x2="204" y2="86"/><line x1="36" y1="116" x2="204" y2="116"/><line x1="36" y1="146" x2="204" y2="146"/>
+            </g>
+            <g id="beadLayer"></g>
+            <g id="face">
+              <path id="browL" class="brow" d="M76 52 Q88 43 100 51" stroke="#2B2620" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+              <path id="browR" class="brow" d="M140 51 Q152 43 164 52" stroke="#2B2620" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+              <g class="eye">
+                <circle class="eye-dot" cx="88" cy="65" r="7" fill="#2B2620"/>
+                <path class="eye-happy" d="M78 67 Q88 56 98 67" stroke="#2B2620" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+              </g>
+              <g class="eye">
+                <circle class="eye-dot" cx="152" cy="65" r="7" fill="#2B2620"/>
+                <path class="eye-happy" d="M142 67 Q152 56 162 67" stroke="#2B2620" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+              </g>
+              <circle class="cheek" cx="68" cy="82" r="9" fill="#C4452A" opacity="0"/>
+              <circle class="cheek" cx="172" cy="82" r="9" fill="#C4452A" opacity="0"/>
+              <path id="mouthSmile" d="M104 163 Q120 177 136 163" stroke="#2B2620" stroke-width="5" fill="none" stroke-linecap="round"/>
+              <ellipse id="mouthOpen" cx="120" cy="168" rx="9" ry="5" fill="#2B2620" opacity="0"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div class="bubble"><div class="tail"></div><p id="bubbleText" aria-live="polite"></p></div>
+    </section>
+
+    <!-- setup -->
+    <section class="panel setup" id="panelSetup">
+      <h1>Practise times tables by ear</h1>
+      <svg class="squiggle" viewBox="0 0 220 12" aria-hidden="true"><path d="M3 8 Q 20 2 40 8 T 80 8 T 120 8 T 160 8 T 217 8" stroke="#C4452A" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
+      <p class="lede">Abi asks each question <strong>out loud</strong>. You <strong>say the answer</strong> — or type it.
+        Every fact you miss comes back a few questions later, until you've said it right.</p>
+      <div class="tables" id="tblWrap"></div>
+      <p class="picknote">The tricky mix is the 6, 7, 8 and 9 tables — the ones everyone forgets.</p>
+      <button class="btn primary" id="btnStart">Start practice</button>
+      <p class="capline" id="capLine"></p>
+      <details class="teachers">
+        <summary>For teachers — the learning idea behind this</summary>
+        <p><strong>Retrieval practice with immediate corrective feedback.</strong>
+          Roediger &amp; Karpicke (2006), “Test-Enhanced Learning: Taking Memory Tests Improves Long-Term Retention”, <em>Psychological Science</em> 17(3).</p>
+        <p class="map"><strong>Mapping:</strong> every fact must be <em>produced</em> — spoken or typed — before it is shown again.
+          A miss gets immediate correction, a spoken “say it back” rehearsal, and a delayed re-test a few items later
+          (not an instant second guess, which would only be recognition).</p>
+        <p><strong>What would count as the idea failing:</strong> showing answers before the learner tries, saving feedback
+          until the end of the round, or re-testing only immediately — any of those would remove the effortful retrieval
+          that drives the effect, and this would be a slide deck.</p>
+      </details>
+    </section>
+
+    <!-- practice -->
+    <section class="panel hidden" id="panelPlay">
+      <div class="equation-row" id="equationRow">
+        <div class="equation">
+          <span id="eqA">7</span><span class="op">×</span><span id="eqB">8</span><span class="op">=</span>
+          <span class="answrap"><span id="eqAns" class="ans">?</span>
+            <svg class="ring" id="ring" viewBox="0 0 160 90" aria-hidden="true"><ellipse cx="80" cy="45" rx="72" ry="38" pathLength="100"/></svg>
+          </span>
+        </div>
+        <div class="stamp" id="stamp"><svg viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="42" fill="none" stroke="#2F6B4F" stroke-width="5"/>
+          <path d="M32 52 L45 65 L70 36" fill="none" stroke="#2F6B4F" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg></div>
+      </div>
+      <div class="answerzone">
+        <div class="micline">
+          <button class="micpill" id="micPill" data-state="idle" title="Tap to open / pause the mic">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21.5"/></svg>
+            <span id="micState">Mic ready</span>
+          </button>
+          <div id="liveText"></div>
+        </div>
+        <canvas id="wave" width="240" height="34"></canvas>
+        <form id="answerForm" autocomplete="off">
+          <input id="answerInput" placeholder='Type "56" or "fifty six"' aria-label="Your answer"
+                 autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
+          <button class="btn" type="submit" id="btnSubmit">Answer</button>
+        </form>
+        <div class="mini-actions">
+          <button class="btn ghost" id="btnHear">Hear it again</button>
+          <button class="btn ghost" id="btnDontKnow">I don't know</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- round report -->
+    <section class="panel hidden endpanel" id="panelEnd">
+      <h2>Round report</h2>
+      <div class="scoreline" id="endScore">0<span class="of">/ 10</span></div>
+      <div class="scorecap">answered correctly on the first try</div>
+      <div class="factwrap hidden" id="endFixedWrap">
+        <h3>Fixed after a retry — well done</h3>
+        <ul class="factlist" id="endFixed"></ul>
+      </div>
+      <div class="factwrap" id="endMissWrap">
+        <h3>Still tricky — say these out loud</h3>
+        <ul class="factlist" id="endMiss"></ul>
+      </div>
+      <p class="allclear hidden" id="allClear">Nothing tricky — every fact, first time.</p>
+      <div class="end-actions">
+        <button class="btn primary" id="btnRetry">Practise the tricky ones</button>
+        <button class="btn" id="btnNew">Choose another table</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Learning idea: retrieval practice (Roediger &amp; Karpicke, 2006) · proof of concept, ~12 hours<br>
+    Everything stays in this browser tab — your voice goes only to the browser's built-in speech service, and nothing is recorded or stored.
+  </footer>
+</div>
+
+<div id="toast" role="status"></div>
+
+<script>
+"use strict";
+/* =============== tiny helpers =============== */
+const $ = s => document.querySelector(s);
+const rnd = a => a[Math.floor(Math.random()*a.length)];
+const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+let timers = [];
+const later = (fn,ms)=>{ const id=setTimeout(fn,ms); timers.push(id); return id; };
+const clearTimers = ()=>{ timers.forEach(clearTimeout); timers=[]; };
+
+const TTS = 'speechSynthesis' in window;
+const SRClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+const isCoarse = matchMedia('(pointer:coarse)').matches;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const NS = 'http://www.w3.org/2000/svg';
+
+/* =============== numbers: words <-> digits =============== */
+const ONES=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve',
+            'thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+const TENS={2:'twenty',3:'thirty',4:'forty',5:'fifty',6:'sixty',7:'seventy',8:'eighty',9:'ninety'};
+function numToWords(n){
+  if(n<20) return ONES[n];
+  if(n<100){ const t=Math.floor(n/10), o=n%10; return TENS[t]+(o?'-'+ONES[o]:''); }
+  const h=Math.floor(n/100), r=n%100;
+  return ONES[h]+' hundred'+(r?' and '+numToWords(r):'');
+}
+const NUMWORDS={zero:0,oh:0,one:1,won:1,two:2,to:2,too:2,three:3,tree:3,four:4,for:4,fore:4,five:5,six:6,
+  seven:7,eight:8,ate:8,nine:9,nigh:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,
+  sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fourty:40,fifty:50,sixty:60,
+  seventy:70,eighty:80,ninety:90,hundred:100};
+function findNumbers(text){
+  if(!text) return [];
+  const toks=String(text).toLowerCase().replace(/[-.,!?;:'"]/g,' ').replace(/\s+/g,' ').trim().split(' ').filter(Boolean);
+  const cands=[];
+  toks.forEach(t=>{ if(/^\d{1,3}$/.test(t)) cands.push(parseInt(t,10)); });
+  for(let i=0;i<toks.length;i++){ // adjacent single digits: "5 6" -> 56
+    if(/^\d$/.test(toks[i]) && i+1<toks.length && /^\d$/.test(toks[i+1])){ cands.push(parseInt(toks[i]+toks[i+1],10)); i++; }
+  }
+  let i=0;
+  while(i<toks.length){
+    if(toks[i]==='and' || !(toks[i] in NUMWORDS)){ i++; continue; }
+    const vals=[]; let j=i;
+    while(j<toks.length){
+      const t=toks[j];
+      if(t==='and' && vals.length){ j++; continue; }
+      if(!(t in NUMWORDS)) break;
+      vals.push(NUMWORDS[t]); j++;
+    }
+    if(vals.length){
+      let v=0, rest=vals;
+      if(vals.length>=2 && vals[0]<=9 && vals[1]===100){ v=vals[0]*100; rest=vals.slice(2); }
+      if(rest.length===1) v+=rest[0];
+      else if(rest.length===2 && rest[0]%10===0 && rest[0]>=20 && rest[1]<10) v+=rest[0]+rest[1];
+      else if(rest.length===2 && rest[0]<=9) v+=rest[0]*10+rest[1];
+      else if(rest.length) v+=rest[0];
+      cands.push(v);
+    }
+    i=j;
+  }
+  return cands.filter(v=>v>=0 && v<=1000);
+}
+const OFFWORDS=new Set(['joke','jokes','funny','song','sing','music','story','stories','game','games','play',
+  'weather','rain','raining','hot','cold','football','soccer','basketball','movie','tv','youtube','tiktok',
+  'name','who','why','where','live','old','hello','hi','hey','yo','bye','goodbye','stop','quit','exit','tired',
+  'sleepy','boring','bored','stupid','dumb','hate','love','like','cool','robot','chatbot','ai','alexa','siri',
+  'google','chat','talk','you','your','are','is','what','can','do','does','how']);
+function classify(text){
+  if(!text || !String(text).trim()) return 'empty';
+  const toks=String(text).toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(Boolean);
+  const compliance=['ok','okay','alright','yes','yep','yeah','yup','sure','fine','done','ready'];
+  if(toks.length && toks.every(t=>compliance.includes(t))) return 'compliance';
+  if(toks.length>=5 || toks.some(t=>OFFWORDS.has(t))) return 'offtask';
+  return 'unclear';
+}
+
+/* =============== app state =============== */
+const G={ phase:'setup', deck:[], uniqueItems:[], idx:0, steers:0, saysback:false, sbNudges:0,
+  collectSeq:0, voiceMode:!!(SRClass && navigator.mediaDevices), soundOn:true, lastSpoken:'' };
+let uidSeq=0;
+const abiEl=$('#abi');
+
+/* =============== the character: beads + face loop =============== */
+const beads=[];
+(function buildBeads(){
+  const layer=$('#beadLayer');
+  [[86,false],[116,true],[146,false]].forEach(([cy,red])=>{
+    for(let i=0;i<7;i++){
+      const g=document.createElementNS(NS,'g');
+      const e=document.createElementNS(NS,'ellipse');
+      e.setAttribute('cx',48+i*22); e.setAttribute('cy',cy);
+      e.setAttribute('rx',9); e.setAttribute('ry',11);
+      e.setAttribute('fill',red?'#C4452A':'#F6EBD2');
+      e.setAttribute('stroke','#2B2620'); e.setAttribute('stroke-width','3');
+      g.appendChild(e); layer.appendChild(g);
+      beads.push({el:g,seed:Math.random()*10});
+    }
+  });
+})();
+const anim={speaking:false,listening:false,amp:0,ampTarget:0,pulse:0,beadWave:-1e9,blinkAt:0,thinking:false,mood:'idle'};
+let hopY=0,hopV=0;
+function hop(){ if(!reduceMotion) hopV=-6; }
+function setMood(m){ anim.mood=m; abiEl.dataset.mood=m; }
+
+const wave=$('#wave'), wctx=wave.getContext('2d');
+(function sizeWave(){ const d=Math.min(2,devicePixelRatio||1);
+  wave.width=240*d; wave.height=34*d; wave.style.width='240px'; wave.style.height='34px';
+  wctx.setTransform(d,0,0,d,0,0); })();
+const wh=new Array(24).fill(0);
+function drawWave(t){
+  wctx.clearRect(0,0,240,34);
+  for(let i=0;i<24;i++){
+    let target=0;
+    if(anim.listening){
+      target = (analyser && meterData) ? meterData[2+i]/255
+             : .22+.18*Math.sin(t/150+i*.7)*Math.sin(t/523+i);
+    }
+    wh[i]+=(target-wh[i])*.25;
+    const h=2+wh[i]*26;
+    wctx.fillStyle='rgba(43,38,32,'+(0.22+wh[i]*0.6).toFixed(2)+')';
+    const x=i*10;
+    if(wctx.roundRect){ wctx.beginPath(); wctx.roundRect(x,17-h/2,5,h,2.5); wctx.fill(); }
+    else wctx.fillRect(x,17-h/2,5,h);
+  }
+}
+function raf(t){
+  if(t>anim.blinkAt && anim.mood!=='happy'){ // blink
+    abiEl.classList.add('blink'); setTimeout(()=>abiEl.classList.remove('blink'),140);
+    anim.blinkAt=t+2400+Math.random()*2600;
+  }
+  if(anim.listening && analyser && meterData){
+    analyser.getByteFrequencyData(meterData);
+    let s=0; for(let i=2;i<26;i++) s+=meterData[i];
+    anim.ampTarget=Math.min(1,(s/24)/140);
+  } else if(anim.listening){ anim.ampTarget=.18; }
+  else anim.ampTarget=0;
+  anim.amp+=(anim.ampTarget-anim.amp)*.2;
+
+  beads.forEach((b,i)=>{
+    let x=0,y=0;
+    if(anim.listening){ x=Math.sin(t/60+b.seed*9)*4.5*anim.amp; y=Math.cos(t/70+b.seed*7)*2*anim.amp; }
+    const wp=(t-anim.beadWave)/1000 - i*0.045;
+    if(wp>0 && wp<1) y-=Math.sin(wp*Math.PI)*7;
+    if(anim.thinking) x+=Math.sin(t/650)*9;
+    b.el.setAttribute('transform','translate('+x.toFixed(2)+' '+y.toFixed(2)+')');
+  });
+
+  const mO=$('#mouthOpen'), mS=$('#mouthSmile');
+  if(anim.speaking){
+    mO.setAttribute('ry',Math.min(13,2.5+Math.abs(Math.sin(t/95))*6.5+anim.pulse*5).toFixed(1));
+    mO.setAttribute('rx',(8+anim.pulse*3).toFixed(1));
+    mO.style.opacity=1; mS.style.opacity=0;
+  } else if(anim.mood==='gentle'){ mO.setAttribute('ry',5); mO.setAttribute('rx',4.5); mO.style.opacity=1; mS.style.opacity=0; }
+  else { mO.style.opacity=0; mS.style.opacity=1; }
+  anim.pulse*=.88;
+
+  hopV+=(0-hopY)*.15; hopV*=.8; hopY+=hopV;
+  const bob=reduceMotion?0:Math.sin(t/850)*2.5;
+  const tilt=anim.speaking?Math.sin(t/500)*1.2:0;
+  $('#abiRoot').setAttribute('transform','translate(0 '+(bob+hopY).toFixed(2)+') rotate('+tilt.toFixed(2)+' 120 134)');
+
+  drawWave(t);
+  requestAnimationFrame(raf);
+}
+requestAnimationFrame(raf);
+
+/* =============== speech bubble reveal =============== */
+let bubbleWords=[], wordStart=[], revealIdx=0, revealInt=null;
+function setMouthText(text){
+  clearInterval(revealInt);
+  const el=$('#bubbleText'); el.innerHTML='';
+  bubbleWords=String(text).split(/\s+/); wordStart=[]; revealIdx=0;
+  let pos=0;
+  bubbleWords.forEach(w=>{
+    wordStart.push(pos); pos+=w.length+1;
+    const s=document.createElement('span'); s.className='w'; s.textContent=w+' '; el.appendChild(s);
+  });
+  renderReveal();
+}
+function renderReveal(){ document.querySelectorAll('#bubbleText .w').forEach((s,i)=>s.classList.toggle('on',i<revealIdx)); }
+function revealUpToChar(ci){ let n=0; bubbleWords.forEach((w,i)=>{ if(wordStart[i]<=ci) n=i+1; }); if(n>revealIdx){revealIdx=n;renderReveal();} }
+function startRevealTimer(){
+  clearInterval(revealInt);
+  revealInt=setInterval(()=>{
+    if(revealIdx<bubbleWords.length){ revealIdx++; renderReveal(); } else clearInterval(revealInt);
+  },230);
+}
+function setBubbleStatic(text){ setMouthText(text); revealIdx=bubbleWords.length; renderReveal(); }
+
+/* =============== TTS =============== */
+let voiceList=[];
+function loadVoices(){ if(TTS) voiceList=speechSynthesis.getVoices(); }
+function loadVoices(){ 
+  if(TTS) {
+    voiceList = speechSynthesis.getVoices();
+    console.log("--- ALL AVAILABLE VOICES IN BROWSER ---");
+    voiceList.forEach(v => console.log(`Name: "${v.name}" | Lang: "${v.lang}" | Default: ${v.default}`));
+  }
+}
+if(TTS){ 
+  loadVoices(); 
+  speechSynthesis.onvoiceschanged = loadVoices; 
+}
+
+function pickVoice(){
+  if(!voiceList.length) voiceList = speechSynthesis.getVoices();
+  if(!voiceList.length) return null;
+
+  const en = voiceList.filter(v => /^en/i.test(v.lang));
+  
+ // /Ava \(Premium\)|Allison \(Enhanced\)
+  const chosenVoice = en.find(v => /Ava \(Premium\)|Allison \(Enhanced\)/i.test(v.name))
+                   || en.find(v => /en[-_]US/i.test(v.lang) && /female/i.test(v.name))
+                   || en.find(v => /en[-_]US/i.test(v.lang))
+                   || en[0];
+
+  return chosenVoice || null;
+}
+
+let speakToken = 0;
+function speak(text, onend){
+  const my = ++speakToken; 
+  G.lastSpoken = text;
+  setMouthText(text);
+
+  const finish = () => { 
+    if(my !== speakToken) return;
+    clearInterval(revealInt); 
+    revealIdx = bubbleWords.length; 
+    renderReveal();
+    anim.speaking = false; 
+    if(onend) onend(); 
+  };
+
+  anim.speaking = true;
+
+  if(!G.soundOn || !TTS){ 
+    startRevealTimer(); 
+    later(finish, 400 + bubbleWords.length * 230); 
+    return; 
+  }
+
+  try {
+    // Essential for Chrome/Safari: resume context & clear active speech queue
+    if (speechSynthesis.paused) speechSynthesis.resume();
+    speechSynthesis.cancel();
+
+    const u = new SpeechSynthesisUtterance(text);
+    const v = pickVoice(); 
+    
+    if(v){ 
+      u.voice = v; 
+      u.lang = v.lang; 
+      console.log("Currently Speaking With:", v.name);
+    } else { 
+      u.lang = 'en-US'; 
+    }
+    
+    u.rate = 0.90; 
+    u.pitch = 1.00;
+    
+    u.onboundary = e => { 
+      if(my === speakToken && e.name === 'word') revealUpToChar(e.charIndex); 
+    };
+    
+    u.onend = finish; 
+    u.onerror = (e) => {
+      console.error("Speech Synthesis Error:", e);
+      finish();
+    };
+
+    // Small delay prevents iOS/macOS WebKit from dropping immediate speech requests
+    setTimeout(() => {
+      speechSynthesis.speak(u);
+    }, 50);
+
+  } catch(e) { 
+    console.error("TTS Exception:", e);
+    startRevealTimer(); 
+    later(finish, 1200); 
+  }
+}
+
+
+function hardStopSpeech(){ if(TTS) speechSynthesis.cancel(); speakToken++; clearInterval(revealInt); anim.speaking=false; }
+
+/* =============== mic meter (Web Audio) =============== */
+let actx=null, meterStream=null, analyser=null, meterData=null;
+function ensureAudio(){ try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); }catch(e){}
+  if(actx&&actx.state==='suspended') actx.resume(); }
+async function startMeter(){
+  try{
+    meterStream=await navigator.mediaDevices.getUserMedia({audio:true});
+    ensureAudio();
+    const src=actx.createMediaStreamSource(meterStream);
+    analyser=actx.createAnalyser(); analyser.fftSize=256; analyser.smoothingTimeConstant=.7;
+    src.connect(analyser); meterData=new Uint8Array(analyser.frequencyBinCount);
+    return true;
+  }catch(e){ analyser=null; return false; }
+}
+function stopMeter(){ if(meterStream){ meterStream.getTracks().forEach(t=>t.stop()); meterStream=null; } analyser=null; }
+
+/* =============== ASR (Web Speech API) =============== */
+function listenOnce(){
+  return new Promise(resolve=>{
+    if(!SRClass){ resolve({error:'unsupported'}); return; }
+    let settled=false, toId=null;
+    const done=v=>{ if(settled) return; settled=true; clearTimeout(toId); resolve(v); };
+    let rec;
+    try{ rec=new SRClass(); }catch(e){ done({error:'unsupported'}); return; }
+    rec.lang='en-GB'; rec.interimResults=true; rec.maxAlternatives=3; rec.continuous=false;
+    rec.onresult=e=>{
+      let interim='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        const r=e.results[i];
+        if(r.isFinal){ done({transcript:r[0].transcript, alts:[...r].map(a=>a.transcript)}); return; }
+        interim+=r[0].transcript;
+      }
+      if(interim) showLive(interim);
+    };
+    rec.onerror=e=>done({error:e.error});
+    rec.onend=()=>done({error:'no-speech'});
+    toId=setTimeout(()=>{ try{rec.abort();}catch(e){} done({error:'timeout'}); },9000);
+    try{ rec.start(); G.rec=rec; }catch(e){ done({error:'start-failed'}); }
+  });
+}
+function abortRec(){ if(G.rec){ try{G.rec.abort();}catch(e){} G.rec=null; } }
+function stopListening(){ G.collectSeq++; abortRec(); anim.listening=false; stopMeter(); setMic('idle','Mic ready'); }
+
+/* =============== little sounds =============== */
+function sfx(kind){
+  if(!G.soundOn) return; ensureAudio(); if(!actx) return;
+  const t=actx.currentTime;
+  const play=(f,t0,dur,type,vol)=>{
+    const o=actx.createOscillator(), g=actx.createGain();
+    o.type=type||'sine'; o.frequency.value=f;
+    g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(vol||.15,t0+.015);
+    g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+    o.connect(g); g.connect(actx.destination); o.start(t0); o.stop(t0+dur+.05);
+  };
+  if(kind==='right'){ play(659,t,.18); play(988,t+.09,.28); }
+  else if(kind==='wrong'){ play(196,t,.3,'triangle',.11); }
+}
+
+/* =============== UI helpers =============== */
+function toast(msg){ const el=$('#toast'); el.textContent=msg; el.classList.add('show');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('show'),4000); }
+function setMic(state,label){ $('#micPill').dataset.state=state; $('#micState').textContent=label; }
+function showLive(t){ $('#liveText').textContent=t?'\u201C'+t+'\u201D':''; }
+function showPanel(name){
+  ['Setup','Play','End'].forEach(n=>$('#panel'+n).classList.toggle('hidden',n.toLowerCase()!==name));
+  $('#ticks').classList.toggle('hidden',name!=='play');
+}
+function enableAnswerUI(b){ $('#btnSubmit').disabled=!b; $('#btnHear').disabled=!b; $('#btnDontKnow').disabled=!b; }
+function lockSoundToggle(){ $('#btnSound').classList.add('gone'); $('#btnSound').disabled=true; }
+function unlockSoundToggle(){ $('#btnSound').classList.remove('gone'); $('#btnSound').disabled=false; }
+
+/* =============== deck & ticks =============== */
+let picked={type:'table',t:7};
+function freshItems(mode){
+  let facts=[];
+  if(mode==='tricky'){ for(let a=6;a<=9;a++) for(let b=a;b<=9;b++) facts.push({a,b}); }
+  else { const t=mode; for(let m=2;m<=12;m++) facts.push({a:t,b:m}); facts=shuffle(facts).slice(0,10); }
+  return facts;
+}
+function renderTicksInit(){
+  const box=$('#ticks'); box.innerHTML='';
+  G.uniqueItems.forEach(it=>{
+    const s=document.createElement('span'); s.className='tick'; s.dataset.uid=it.uid; box.appendChild(s);
+  });
+}
+function markTickCurrent(item){
+  document.querySelectorAll('.tick').forEach(t=>t.classList.remove('current'));
+  const t=document.querySelector('.tick[data-uid="'+item.uid+'"]');
+  if(t){ t.classList.add('current'); t.classList.toggle('retest',item.requeues>0); }
+}
+function markTick(uid,status){
+  const t=document.querySelector('.tick[data-uid="'+uid+'"]');
+  if(t){ t.classList.remove('current'); t.classList.toggle('firsttry',status==='firsttry');
+    t.classList.toggle('fixed',status==='fixed'); t.classList.toggle('miss',status==='miss'); }
+}
+
+/* =============== equation render =============== */
+function renderEquation(item){
+  const [x,y]=item.order;
+  $('#eqA').textContent=x; $('#eqB').textContent=y;
+  const ans=$('#eqAns'); ans.textContent='?'; ans.className='ans';
+  const ring=$('#ring');
+  ring.classList.add('noanim'); ring.classList.remove('drawn');
+  void ring.getBoundingClientRect(); ring.classList.remove('noanim');
+  $('#stamp').classList.remove('show');
+  const row=$('#equationRow'); row.classList.remove('ok','shake');
+}
+function revealAnswer(item,ok){
+  const ans=$('#eqAns'); ans.textContent=item.a*item.b;
+  ans.className='ans shown'+(ok?'':' wrong');
+  const ring=$('#ring'), row=$('#equationRow');
+  if(ok){ void ring.getBoundingClientRect(); ring.classList.add('drawn');
+    row.classList.add('ok','shake'); $('#stamp').classList.add('show');
+    setTimeout(()=>row.classList.remove('shake'),450); }
+  else { ring.classList.remove('drawn'); row.classList.remove('ok'); }
+}
+
+/* =============== round flow =============== */
+function startRound(rawItems,opts){
+  opts=opts||{};
+  hardStopSpeech(); clearTimers(); stopListening(); enableAnswerUI(false);
+  lockSoundToggle();
+  G.uniqueItems=rawItems.map(f=>({uid:++uidSeq,a:f.a,b:f.b,status:'pending',requeues:0,
+    order:Math.random()<.5?[f.b,f.a]:[f.a,f.b]}));
+  G.deck=[...G.uniqueItems]; G.idx=0; G.saysback=false; G.sbNudges=0;
+  renderTicksInit(); renderEquation(G.deck[0]); showPanel('play');
+  const intro = opts.replay
+    ? 'Back to the tricky ones — '+numToWords(G.deck.length)+' questions. Say each answer out loud, or type it. First one\u2026'
+    : (opts.mode==='tricky'
+      ? "Hello! I'm Abi! Ten tricky questions from the six, seven, eight and nine times tables. Say your answer out loud — or type it. First one\u2026"
+      : "Hello! I'm Abi! Let's practise the "+numToWords(opts.mode)+" times table — ten questions. Say your answer out loud — or type it. First one\u2026");
+  setMood('idle');
+  later(()=>speak(intro,askCurrent),450);
+}
+function askCurrent(){
+  const item=G.deck[G.idx];
+  if(!item){ endRound(); return; }
+  G.phase='ask'; G.steers=0; G.saysback=false; G.sbNudges=0;
+  enableAnswerUI(false); showLive('');
+  markTickCurrent(item); renderEquation(item);
+  setMood('ask');
+  const [x,y]=item.order;
+  speak('What is '+numToWords(x)+' times '+numToWords(y)+'?',collect);
+}
+function collect(){
+  const item=G.deck[G.idx]; if(!item) return;
+  G.phase='collect'; enableAnswerUI(true); showLive('');
+  if((!G.voiceMode || !G.steers>=2) && (!G.voiceMode || G.steers>=2)){} // no-op guard (kept simple below)
+  if(!G.voiceMode && !isCoarse) $('#answerInput').focus({preventScroll:true});
+  if(G.voiceMode && SRClass) startListening();
+  else setMic('off', SRClass? 'Typed mode' : 'Typed mode');
+}
+function startListening(){
+  if(anim.listening) return;
+  const my=++G.collectSeq;
+  anim.listening=true; setMood('listen'); setMic('live','Listening\u2026'); showLive('');
+  (async()=>{
+    await startMeter();
+    if(my!==G.collectSeq){ stopMeter(); return; }
+    const res=await listenOnce();
+    anim.listening=false; stopMeter();
+    if(my!==G.collectSeq) return;
+    setMic('idle','Mic ready');
+    handleVoiceResult(res);
+  })();
+}
+function handleVoiceResult(res){
+  if(G.phase!=='collect') return;
+  if(res.error){
+    if(res.error==='aborted'||res.error==='start-failed') return;
+    if(res.error==='not-allowed'||res.error==='service-not-allowed'||res.error==='audio-capture'){
+      G.voiceMode=false; setMic('off','Typed mode');
+      toast('Microphone blocked — switched to typing. Everything still works from the keyboard.');
+      if(!isCoarse) $('#answerInput').focus({preventScroll:true});
+    } else if(res.error==='no-speech'||res.error==='timeout'){
+      speak("I didn't catch anything. Say your answer out loud — or type it below.",collect);
+    } else if(res.error==='network'){
+      toast('The speech service is unreachable — please type your answer below.');
+      setMic('off','Type below'); if(!isCoarse) $('#answerInput').focus({preventScroll:true});
+    } else { setMic('idle','Mic ready'); }
+    return;
+  }
+  submitAnswer(res.transcript||'',res.alts||[]);
+}
+function submitAnswer(text,alts){
+  if(G.phase!=='collect') return;
+  const item=G.deck[G.idx]; if(!item) return;
+  G.collectSeq++; abortRec(); anim.listening=false; stopMeter(); setMic('idle','Mic ready'); showLive('');
+  enableAnswerUI(false); G.phase='evaluate';
+  const texts=[text].concat(alts||[]);
+  const cands=[];
+  texts.forEach(t=>findNumbers(t).forEach(v=>{ if(!cands.includes(v)) cands.push(v); }));
+  const cls=cands.length?'number':classify(text);
+  const product=item.a*item.b;
+  setMood('think'); anim.thinking=true;
+  later(()=>{
+    anim.thinking=false;
+    if(G.saysback){
+      if(cands.includes(product)||cls==='compliance') return saybackAccepted(item);
+      if(cls==='number') return saybackNudge(item);
+      return steer(item, cls==='offtask'?'offtask':(cls==='empty'?'empty':'unclear'));
+    }
+    if(cands.includes(product)) return answerCorrect(item);
+    if(cls==='number'){
+      if(cands.includes(item.a)&&cands.includes(item.b)) return steer(item,'echo');
+      return answerWrong(item,false);
+    }
+    if(cls==='compliance') return steer(item,'unclear');
+    return steer(item, cls==='offtask'?'offtask':(cls==='empty'?'empty':'unclear'));
+  },700);
+}
+function steer(item,kind){
+  const [x,y]=item.order, w=numToWords(item.a*item.b);
+  G.steers++;
+  if(G.steers>=3){
+    if(G.saysback){ G.saysback=false; setMood('gentle'); speak("Not quite! But no problem! We'll see this one again soon!",nextItem); }
+    else answerWrong(item,true);
+    return;
+  }
+  let line;
+  if(kind==='echo') line="That's the question, silly — I need the answer! What is "+numToWords(x)+' times '+numToWords(y)+'?';
+  else if(kind==='offtask') line=rnd([
+    "Ha! I'm only good at one thing — times tables. Back to it: what is "+numToWords(x)+' times '+numToWords(y)+'?',
+    "Nice try — but I'm just a math teacher. What is "+numToWords(x)+' times '+numToWords(y)+'?',
+    "Not sure about that. Moving on though, What is "+numToWords(x)+' times '+numToWords(y)+'?']);
+  else if(kind==='empty') line=G.saysback?("I'm listening — just say "+w+'.'):"I didn't catch anything. Say your answer out loud — or type it below.";
+  else line="I heard you, but not a number. Say just the answer — or type it below.";
+  if(G.steers===2) line+=' You can also press \u201CI don\u2019t know\u201D.';
+  setMood(G.saysback?'gentle':'idle');
+  speak(line,collect);
+}
+function answerWrong(item,forced){
+  const [x,y]=item.order, w=numToWords(item.a*item.b);
+  if(item.status==='pending') item.status='miss';
+  if(item.requeues<2){ item.requeues++; G.deck.splice(Math.min(G.idx+3,G.deck.length),0,item); }
+  markTick(item.uid,item.status);
+  revealAnswer(item,false);
+  G.saysback=true; G.sbNudges=0;
+  setMood('gentle'); sfx('wrong');
+  speak((forced
+      ? "That's okay! That's what practice is for. "
+      : 'Not quite - ')+numToWords(x)+' times '+numToWords(y)+' is '+w+'. Now say it back — '+w+'.', collect);
+}
+function saybackNudge(item){
+  const w=numToWords(item.a*item.b);
+  G.sbNudges++;
+  if(G.sbNudges>=2){ G.saysback=false; setMood('gentle');
+    speak("Not quite! But no problem! We'll see this one again soon.",nextItem); }
+  else speak("Almost there, it's "+w+'. One more time: say '+w+'.',collect);
+}
+function saybackAccepted(item){
+  G.saysback=false;
+  const [x,y]=item.order, w=numToWords(item.a*item.b);
+  if(item.status==='miss') item.status='fixed';
+  markTick(item.uid,item.status);
+  setMood('happy'); hop(); anim.beadWave=performance.now(); sfx('right');
+  speak(rnd(["Absolutely! "+numToWords(x)+' times '+numToWords(y)+' is '+w+'.',
+             'Well said! '+numToWords(x)+' times '+numToWords(y)+': '+w+'.',
+             'Good job! '+numToWords(x)+' times '+numToWords(y)+': '+w+'.']),nextItem);
+}
+function answerCorrect(item){
+  const [x,y]=item.order, w=numToWords(item.a*item.b);
+  item.status = item.status==='pending' ? 'firsttry' : 'fixed';
+  markTick(item.uid,item.status);
+  revealAnswer(item,true);
+  setMood('happy'); hop(); anim.beadWave=performance.now(); sfx('right');
+  speak(rnd(['Yes! '+numToWords(x)+' times '+numToWords(y)+' is '+w+'.',
+             'Exactly! '+w+'.',
+             "That's it! "+numToWords(x)+' times '+numToWords(y)+': '+w+'.',
+             'Correct! '+w+' it is.',
+             "Amazing! "+numToWords(x)+' times '+numToWords(y)+': '+w+'.']),nextItem);
+}
+function nextItem(){
+  G.saysback=false; G.sbNudges=0; G.steers=0;
+  G.idx++;
+  later(askCurrent,400);
+}
+function endRound(){
+  G.phase='end'; enableAnswerUI(false);
+  const uniq=G.uniqueItems;
+  const first=uniq.filter(i=>i.status==='firsttry').length;
+  const fixed=uniq.filter(i=>i.status==='fixed');
+  const miss=uniq.filter(i=>i.status==='miss');
+  $('#endScore').innerHTML=first+'<span class="of">/ '+uniq.length+'</span>';
+  $('#endFixedWrap').classList.toggle('hidden',!fixed.length);
+  $('#endFixed').innerHTML=fixed.map(factRow).join('');
+  $('#endMissWrap').classList.toggle('hidden',!miss.length);
+  $('#endMiss').innerHTML=miss.map(factRow).join('');
+  $('#allClear').classList.toggle('hidden',first !== uniq.length);
+  $('#btnRetry').classList.toggle('hidden',!miss.length && !fixed.length);
+  showPanel('end');
+  setMood(miss.length?'gentle':'happy');
+  if(!miss.length) anim.beadWave=performance.now();
+  speak('All done! '+numToWords(first)+' out of '+numToWords(uniq.length)+' on the first try.'+
+    (miss.length
+      ? ' '+(miss.length===1?'One fact':miss.length+' facts')+' want'+(miss.length===1?'s':'')+' another go — tap the button when you\u2019re ready.'
+      : ' Excellent work.'),null);
+}
+function factRow(f){ return '<li><span class="fa">'+f.a+' \u00D7 '+f.b+'</span><i></i><span class="fv">'+(f.a*f.b)+'</span></li>'; }
+
+/* =============== setup / wiring =============== */
+function showSetup(){
+  hardStopSpeech(); clearTimers(); stopListening(); enableAnswerUI(false);
+  unlockSoundToggle();
+  G.phase='setup'; showPanel('setup'); setMood('idle');
+  $('#ticks').innerHTML='';
+  setBubbleStatic("Hello! I'm Abi! Pick a times table below, press Start, and we'll practise by ear — I ask, you say the answer out loud. Typing works too.");
+}
+(function buildPicker(){
+  const wrap=$('#tblWrap');
+  const make=(label,val,wide)=>{
+    const b=document.createElement('button');
+    b.type='button'; b.className='tbl'+(wide?' wide':''); b.textContent=label;
+    b.onclick=()=>{ picked=val;
+      wrap.querySelectorAll('.tbl').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel'); };
+    wrap.appendChild(b); return b;
+  };
+  for(let t=2;t<=12;t++){
+    const b=make(String(t),{type:'table',t:t});
+    if(t===7) b.classList.add('sel');
+  }
+  make('Tricky mix \u00B7 6\u20139',{type:'tricky'},true);
+})();
+(function capLine(){
+  const ok=!!(SRClass && navigator.mediaDevices);
+  $('#capLine').innerHTML = ok
+    ? 'Voice ready — Abi will listen and talk. Chrome or Edge recommended.<br><span class="sub">Speech runs through your browser\u2019s built-in speech service; nothing is recorded or uploaded by this app.</span>'
+    : 'Voice isn\u2019t available in this browser — you\u2019ll type your answers instead. The practice loop is exactly the same.';
+})();
+
+ $('#btnStart').addEventListener('click',()=>{
+  ensureAudio();
+  const items = picked.type==='tricky' ? freshItems('tricky') : freshItems(picked.t);
+  startRound(items,{mode:picked.type==='tricky'?'tricky':picked.t});
+});
+ $('#answerForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  if(G.phase!=='collect') return;
+  const v=$('#answerInput').value;
+  if(!v.trim()){ e.currentTarget.classList.remove('shake'); void e.currentTarget.offsetWidth;
+    e.currentTarget.classList.add('shake'); return; }
+  $('#answerInput').value='';
+  submitAnswer(v,[v]);
+});
+ $('#btnHear').addEventListener('click',()=>{
+  if(G.phase!=='collect') return;
+  const item=G.deck[G.idx]; if(!item) return;
+  stopListening(); setMood('ask');
+  const [x,y]=item.order;
+  speak('Once more: what is '+numToWords(x)+' times '+numToWords(y)+'?',collect);
+});
+ $('#btnDontKnow').addEventListener('click',()=>{
+  if(G.phase!=='collect') return;
+  const item=G.deck[G.idx]; if(!item) return;
+  stopListening();
+  if(G.saysback){ G.saysback=false; setMood('gentle');
+    speak("No problem — we'll see this one again soon.",nextItem); }
+  else answerWrong(item,true);
+});
+ $('#micPill').addEventListener('click',()=>{
+  if(G.phase!=='collect') return;
+  if(!G.voiceMode || !SRClass){ toast('Voice is off in this session — just type your answer below.'); return; }
+  if(anim.listening){ stopListening(); setMic('idle','Mic paused — tap to reopen'); }
+  else startListening();
+});
+ $('#btnSound').addEventListener('click',()=>{
+  G.soundOn=!G.soundOn;
+  $('#icoSound').classList.toggle('hidden',!G.soundOn);
+  $('#icoMute').classList.toggle('hidden',G.soundOn);
+  if(!G.soundOn && TTS) speechSynthesis.cancel();
+  else ensureAudio();
+});
+ $('#btnRestart').addEventListener('click',showSetup);
+ $('#btnNew').addEventListener('click',showSetup);
+ $('#btnRetry').addEventListener('click',()=>{
+  const items=G.uniqueItems.filter(i=>i.status!=='firsttry').map(i=>({a:i.a,b:i.b}));
+  if(items.length) startRound(items,{replay:true});
+});
+
+showSetup();
+</script>
+</body>
+</html>
