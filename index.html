@@ -60,8 +60,7 @@
   /* ---- shared scene ---- */
   main{display:flex;flex-direction:column;gap:30px;margin-top:22px}
   .duo{display:flex;align-items:center;gap:30px}
-  .abi-wrap{flex:0 0 auto;width:228px}
-  #abi{display:block;width:100%;height:auto}
+  .abi-wrap{flex:0 0 auto;display:flex;justify-content:center}
   .bubble{position:relative;flex:1;background:var(--paper-hi);border:2.5px solid var(--ink);
     border-radius:18px 22px 16px 24px;padding:20px 24px;min-height:118px;display:flex;align-items:center;
     box-shadow:var(--shadow)}
@@ -179,27 +178,44 @@
     text-align:center;opacity:0;pointer-events:none;transition:all .3s;box-shadow:var(--shadow)}
   #toast.show{opacity:1;transform:translate(-50%,0)}
 
-  /* ---- Abi moods ---- */
-  #abi .brow,#abi .eye,#abi .eye-dot,#abi .cheek,#abi #mouthSmile{transform-box:fill-box;transform-origin:center}
-  #abi .brow{transition:transform .25s ease}
-  #abi .eye-dot{transition:transform .15s,opacity .15s}
-  #abi .eye-happy{opacity:0;transition:opacity .15s}
-  #abi .cheek{transition:opacity .3s}
-  #abi[data-mood="listen"] .brow{transform:translateY(-4px)}
-  #abi[data-mood="listen"] .eye-dot{transform:scale(1.22)}
-  #abi[data-mood="happy"] .brow{transform:translateY(-5px)}
-  #abi[data-mood="happy"] .eye-dot{opacity:0}
-  #abi[data-mood="happy"] .eye-happy{opacity:1}
-  #abi[data-mood="happy"] .cheek{opacity:.3}
-  #abi[data-mood="happy"] #mouthSmile{transform:scale(1.15) translateY(1px)}
-  #abi[data-mood="gentle"] #browL{transform:rotate(-9deg) translateY(-1px)}
-  #abi[data-mood="gentle"] #browR{transform:rotate(9deg) translateY(-1px)}
-  #abi[data-mood="think"] .eye-dot{transform:translate(-2px,-2.5px)}
-  #abi.blink .eye-dot{transform:scaleY(.12)}
+    /* ---- Abi mascot (new design) ---- */
+  .abi-mascot{position:relative;width:196px;height:224px;
+    background:linear-gradient(135deg,#a8edf0 0%,#fed6e3 100%);
+    border:5px solid #4a4e69;border-radius:44px;
+    box-shadow:0 11px 0 #4a4e69,0 15px 24px rgba(0,0,0,.12);
+    display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+    padding:17px 0;cursor:pointer;animation:float 3s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-12px) rotate(2deg)}}
+  .abi-inner{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-between}
+  .face{position:relative;width:100%;height:70px}
+  .eye{position:absolute;top:14px;width:30px;height:30px;background:#22223b;border-radius:50%;
+    animation:blink 4s infinite;transition:transform .2s}
+  .eye.left{left:39px}.eye.right{right:39px}
+  .pupil{width:10px;height:10px;background:#fff;border-radius:50%;margin-top:4px;margin-left:6px;transition:transform .2s}
+  .cheek{position:absolute;top:36px;width:22px;height:14px;background:#ff85a1;border-radius:50%;opacity:.6;transition:opacity .3s}
+  .cheek.left{left:25px}.cheek.right{right:25px}
+  .mouth{position:absolute;bottom:6px;left:50%;transform:translateX(-50%)}
+  .mouth.smile{width:22px;height:14px;border-bottom:4px solid #22223b;border-radius:0 0 16px 16px;
+    transition:height .2s,border-radius .2s}
+  .mouth.open{width:15px;height:10px;background:#22223b;border-radius:50%;opacity:0}
+  .abacus-frame{width:140px;height:105px;background:#fff;border:4px solid #4a4e69;border-radius:22px;
+    display:flex;flex-direction:column;justify-content:space-around;padding:6px 8px}
+  .row{position:relative;width:100%;height:22px;display:flex;align-items:center;justify-content:space-around}
+  .rod{position:absolute;width:100%;height:4px;background:#c9ada7;z-index:1}
+  .bead{width:20px;height:20px;border-radius:50%;border:3px solid #4a4e69;z-index:2}
+  .bead.yellow{background:#ffd166}.bead.coral{background:#ff6b6b}.bead.teal{background:#4ecdc4}
+  .abi-mascot:hover .bead{transform:scale(1.15)}
+  @keyframes blink{0%,90%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+  /* moods — the JS keeps setting data-mood on #abi; these map it to the new face */
+  #abi[data-mood="listen"] .pupil{transform:scale(1.5)}
+  #abi[data-mood="happy"] .eye{animation:none;transform:scaleY(.45)}
+  #abi[data-mood="happy"] .cheek{opacity:.9}
+  #abi[data-mood="happy"] .mouth.smile{height:18px;border-radius:0 0 20px 20px}
+  #abi[data-mood="gentle"] .pupil{transform:translateY(4px)}
+  #abi[data-mood="think"] .pupil{transform:translate(6px,-4px)}
 
   @media (max-width:840px){
     .duo{flex-direction:column;gap:12px}
-    .abi-wrap{width:170px}
     .bubble{min-height:96px;min-width:100%}
   }
   @media (max-width:640px){
@@ -210,6 +226,7 @@
   @media (prefers-reduced-motion:reduce){
     .tick.current{animation:none}
     .panel{animation:none}
+    .abi-mascot,.eye{animation:none}
   }
 </style>
 </head>
@@ -247,34 +264,23 @@
     <!-- one scene: Abi + speech bubble, always present -->
     <section class="duo">
       <div class="abi-wrap">
-        <svg id="abi" viewBox="0 0 240 268" data-mood="idle" aria-hidden="true" focusable="false">
-          <g id="abiRoot">
-            <g stroke="#2B2620" stroke-width="5" stroke-linecap="round" fill="none">
-              <path d="M78 196 L56 252"/><path d="M162 196 L184 252"/><path d="M100 226 L140 226"/>
-            </g>
-            <rect x="20" y="22" width="200" height="176" rx="20" fill="#FFFDF4" stroke="#2B2620" stroke-width="5"/>
-            <g stroke="#2B2620" stroke-width="3" stroke-linecap="round" opacity=".5">
-              <line x1="36" y1="86" x2="204" y2="86"/><line x1="36" y1="116" x2="204" y2="116"/><line x1="36" y1="146" x2="204" y2="146"/>
-            </g>
-            <g id="beadLayer"></g>
-            <g id="face">
-              <path id="browL" class="brow" d="M76 52 Q88 43 100 51" stroke="#2B2620" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-              <path id="browR" class="brow" d="M140 51 Q152 43 164 52" stroke="#2B2620" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-              <g class="eye">
-                <circle class="eye-dot" cx="88" cy="65" r="7" fill="#2B2620"/>
-                <path class="eye-happy" d="M78 67 Q88 56 98 67" stroke="#2B2620" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-              </g>
-              <g class="eye">
-                <circle class="eye-dot" cx="152" cy="65" r="7" fill="#2B2620"/>
-                <path class="eye-happy" d="M142 67 Q152 56 162 67" stroke="#2B2620" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-              </g>
-              <circle class="cheek" cx="68" cy="82" r="9" fill="#C4452A" opacity="0"/>
-              <circle class="cheek" cx="172" cy="82" r="9" fill="#C4452A" opacity="0"/>
-              <path id="mouthSmile" d="M104 163 Q120 177 136 163" stroke="#2B2620" stroke-width="5" fill="none" stroke-linecap="round"/>
-              <ellipse id="mouthOpen" cx="120" cy="168" rx="9" ry="5" fill="#2B2620" opacity="0"/>
-            </g>
-          </g>
-        </svg>
+        <div id="abi" class="abi-mascot" data-mood="idle" aria-hidden="true">
+          <div class="abi-inner" id="abiInner">
+            <div class="face">
+              <div class="eye left"><div class="pupil"></div></div>
+              <div class="eye right"><div class="pupil"></div></div>
+              <div class="cheek left"></div>
+              <div class="cheek right"></div>
+              <div class="mouth smile" id="mouthSmile"></div>
+              <div class="mouth open" id="mouthOpen"></div>
+            </div>
+            <div class="abacus-frame">
+              <div class="row"><div class="rod"></div><div class="bead yellow"></div><div class="bead yellow"></div><div class="bead yellow"></div></div>
+              <div class="row"><div class="rod"></div><div class="bead coral"></div><div class="bead coral"></div><div class="bead coral"></div></div>
+              <div class="row"><div class="rod"></div><div class="bead teal"></div><div class="bead teal"></div><div class="bead teal"></div></div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="bubble"><div class="tail"></div><p id="bubbleText" aria-live="polite"></p></div>
     </section>
@@ -350,7 +356,7 @@
         <h3>Still tricky — say these out loud</h3>
         <ul class="factlist" id="endMiss"></ul>
       </div>
-      <p class="allclear hidden" id="allClear">Nothing tricky — every fact, first time.</p>
+      <p class="allclear hidden" id="allClear">All correct! Great Job!</p>
       <div class="end-actions">
         <button class="btn primary" id="btnRetry">Practise the tricky ones</button>
         <button class="btn" id="btnNew">Choose another table</button>
@@ -448,22 +454,7 @@ let uidSeq=0;
 const abiEl=$('#abi');
 
 /* =============== the character: beads + face loop =============== */
-const beads=[];
-(function buildBeads(){
-  const layer=$('#beadLayer');
-  [[86,false],[116,true],[146,false]].forEach(([cy,red])=>{
-    for(let i=0;i<7;i++){
-      const g=document.createElementNS(NS,'g');
-      const e=document.createElementNS(NS,'ellipse');
-      e.setAttribute('cx',48+i*22); e.setAttribute('cy',cy);
-      e.setAttribute('rx',9); e.setAttribute('ry',11);
-      e.setAttribute('fill',red?'#C4452A':'#F6EBD2');
-      e.setAttribute('stroke','#2B2620'); e.setAttribute('stroke-width','3');
-      g.appendChild(e); layer.appendChild(g);
-      beads.push({el:g,seed:Math.random()*10});
-    }
-  });
-})();
+const beads=[...document.querySelectorAll('#abi .bead')].map(el=>({el,seed:Math.random()*10}));
 const anim={speaking:false,listening:false,amp:0,ampTarget:0,pulse:0,beadWave:-1e9,blinkAt:0,thinking:false,mood:'idle'};
 let hopY=0,hopV=0;
 function hop(){ if(!reduceMotion) hopV=-6; }
@@ -491,10 +482,6 @@ function drawWave(t){
   }
 }
 function raf(t){
-  if(t>anim.blinkAt && anim.mood!=='happy'){ // blink
-    abiEl.classList.add('blink'); setTimeout(()=>abiEl.classList.remove('blink'),140);
-    anim.blinkAt=t+2400+Math.random()*2600;
-  }
   if(anim.listening && analyser && meterData){
     analyser.getByteFrequencyData(meterData);
     let s=0; for(let i=2;i<26;i++) s+=meterData[i];
@@ -509,22 +496,23 @@ function raf(t){
     const wp=(t-anim.beadWave)/1000 - i*0.045;
     if(wp>0 && wp<1) y-=Math.sin(wp*Math.PI)*7;
     if(anim.thinking) x+=Math.sin(t/650)*9;
-    b.el.setAttribute('transform','translate('+x.toFixed(2)+' '+y.toFixed(2)+')');
+    if(Math.abs(x)<.05 && Math.abs(y)<.05) b.el.style.transform=''; // idle: let CSS (incl. :hover) own the beads
+    else b.el.style.transform='translate('+x.toFixed(2)+'px,'+y.toFixed(2)+'px)';
   });
 
   const mO=$('#mouthOpen'), mS=$('#mouthSmile');
   if(anim.speaking){
-    mO.setAttribute('ry',Math.min(13,2.5+Math.abs(Math.sin(t/95))*6.5+anim.pulse*5).toFixed(1));
-    mO.setAttribute('rx',(8+anim.pulse*3).toFixed(1));
+    mO.style.height=Math.min(22,7+Math.abs(Math.sin(t/95))*9+anim.pulse*7).toFixed(1)+'px';
+    mO.style.width=(15+anim.pulse*5).toFixed(1)+'px';
     mO.style.opacity=1; mS.style.opacity=0;
-  } else if(anim.mood==='gentle'){ mO.setAttribute('ry',5); mO.setAttribute('rx',4.5); mO.style.opacity=1; mS.style.opacity=0; }
+  } else if(anim.mood==='gentle'){ mO.style.height='10px'; mO.style.width='12px'; mO.style.opacity=1; mS.style.opacity=0; }
   else { mO.style.opacity=0; mS.style.opacity=1; }
   anim.pulse*=.88;
 
   hopV+=(0-hopY)*.15; hopV*=.8; hopY+=hopV;
-  const bob=reduceMotion?0:Math.sin(t/850)*2.5;
   const tilt=anim.speaking?Math.sin(t/500)*1.2:0;
-  $('#abiRoot').setAttribute('transform','translate(0 '+(bob+hopY).toFixed(2)+') rotate('+tilt.toFixed(2)+' 120 134)');
+  const inner=$('#abiInner');
+  if(inner) inner.style.transform='translateY('+hopY.toFixed(2)+'px) rotate('+tilt.toFixed(2)+'deg)';
 
   drawWave(t);
   requestAnimationFrame(raf);
@@ -585,67 +573,34 @@ function pickVoice(){
 }
 
 let speakToken = 0;
-function speak(text, onend){
-  const my = ++speakToken; 
-  G.lastSpoken = text;
+
+function speak(text,onend){
+  const my=++speakToken; G.lastSpoken=text;
   setMouthText(text);
-
-  const finish = () => { 
-    if(my !== speakToken) return;
-    clearInterval(revealInt); 
-    revealIdx = bubbleWords.length; 
-    renderReveal();
-    anim.speaking = false; 
-    if(onend) onend(); 
-  };
-
-  anim.speaking = true;
-
-  if(!G.soundOn || !TTS){ 
-    startRevealTimer(); 
-    later(finish, 400 + bubbleWords.length * 230); 
-    return; 
-  }
-
-  try {
-    // Essential for Chrome/Safari: resume context & clear active speech queue
-    if (speechSynthesis.paused) speechSynthesis.resume();
+  let wd=null, fin=false;
+  const finish=()=>{ if(my!==speakToken||fin) return; fin=true;
+    if(wd) clearTimeout(wd);
+    clearInterval(revealInt); revealIdx=bubbleWords.length; renderReveal();
+    anim.speaking=false; if(onend) onend(); };
+  anim.speaking=true;
+  if(!G.soundOn || !TTS){ startRevealTimer(); later(finish,400+bubbleWords.length*230); return; }
+  try{
     speechSynthesis.cancel();
-
-    const u = new SpeechSynthesisUtterance(text);
-    const v = pickVoice(); 
-    
-    if(v){ 
-      u.voice = v; 
-      u.lang = v.lang; 
-      console.log("Currently Speaking With:", v.name);
-    } else { 
-      u.lang = 'en-US'; 
-    }
-    
-    u.rate = 0.90; 
-    u.pitch = 1.00;
-    
-    u.onboundary = e => { 
-      if(my === speakToken && e.name === 'word') revealUpToChar(e.charIndex); 
-    };
-    
-    u.onend = finish; 
-    u.onerror = (e) => {
-      console.error("Speech Synthesis Error:", e);
-      finish();
-    };
-
-    // Small delay prevents iOS/macOS WebKit from dropping immediate speech requests
-    setTimeout(() => {
-      speechSynthesis.speak(u);
-    }, 50);
-
-  } catch(e) { 
-    console.error("TTS Exception:", e);
-    startRevealTimer(); 
-    later(finish, 1200); 
-  }
+    const u=new SpeechSynthesisUtterance(text);
+    const v=pickVoice(); if(v){ u.voice=v; u.lang=v.lang; } else u.lang='en-GB';
+    u.rate=.95; u.pitch=1.05;
+    u.onboundary=e=>{ if(my!==speakToken) return;
+      anim.pulse=1; anim.beadWave=performance.now();
+      if(typeof e.charIndex==='number') revealUpToChar(e.charIndex); };
+    u.onend=finish; u.onerror=finish;
+    setTimeout(()=>{ if(my===speakToken) speechSynthesis.speak(u); },60);
+    startRevealTimer();
+    // watchdog for stuck utterances: cancelled on natural end; if a slow voice is
+    // still talking when it fires, cut it so the mic never hears the tutor
+    wd=later(()=>{ if(my!==speakToken) return;
+      try{ speechSynthesis.cancel(); }catch(e){}
+      finish(); },1600+text.length*110);
+  }catch(err){ startRevealTimer(); later(finish,400+bubbleWords.length*230); }
 }
 
 
@@ -668,11 +623,22 @@ async function startMeter(){
 function stopMeter(){ if(meterStream){ meterStream.getTracks().forEach(t=>t.stop()); meterStream=null; } analyser=null; }
 
 /* =============== ASR (Web Speech API) =============== */
-function listenOnce(){
+function listenOnce(retried,seq){
   return new Promise(resolve=>{
     if(!SRClass){ resolve({error:'unsupported'}); return; }
     let settled=false, toId=null;
+    const started=performance.now();
     const done=v=>{ if(settled) return; settled=true; clearTimeout(toId); resolve(v); };
+    const earlyDeath=err=>{
+      if(settled) return;
+      if(seq!==undefined && seq!==G.collectSeq){ done({error:'aborted'}); return; } // session moved on (Hear it again, restart…)
+      // Chrome sometimes kills a recognizer almost instantly (the speech service racing
+      // the freshly opened mic stream). If it dies within 1.2 s, retry once silently
+      // instead of failing in front of the learner. Permission errors never retry.
+      if(!retried && performance.now()-started<1200 && err!=='not-allowed' && err!=='service-not-allowed'){
+        settled=true; clearTimeout(toId); resolve(listenOnce(true,seq));
+      } else done({error:err});
+    };
     let rec;
     try{ rec=new SRClass(); }catch(e){ done({error:'unsupported'}); return; }
     rec.lang='en-GB'; rec.interimResults=true; rec.maxAlternatives=3; rec.continuous=false;
@@ -685,9 +651,17 @@ function listenOnce(){
       }
       if(interim) showLive(interim);
     };
-    rec.onerror=e=>done({error:e.error});
-    rec.onend=()=>done({error:'no-speech'});
-    toId=setTimeout(()=>{ try{rec.abort();}catch(e){} done({error:'timeout'}); },9000);
+    rec.onerror=e=>{
+      // ADD THIS LINE TO SEE THE EXACT BROWSER ERROR
+      console.error('SpeechRecognition Error:', e.error, e.message || '');
+      earlyDeath(e.error);
+    };
+    rec.onend=()=>{
+      // ADD THIS LINE TO KNOW WHEN IT STOPS LISTENING
+      console.log('SpeechRecognition ended.');
+      earlyDeath('no-speech');
+    };
+    toId=setTimeout(()=>{ try{rec.abort();}catch(e){} done({error:'timeout'}); },7000); // 7 s to say the answer
     try{ rec.start(); G.rec=rec; }catch(e){ done({error:'start-failed'}); }
   });
 }
@@ -810,7 +784,10 @@ function startListening(){
   (async()=>{
     await startMeter();
     if(my!==G.collectSeq){ stopMeter(); return; }
-    const res=await listenOnce();
+    await new Promise(r=>setTimeout(r,250)); // let the audio pipeline settle before ASR starts
+    if(my!==G.collectSeq){ stopMeter(); return; }
+    const res=await listenOnce(false,my);
+
     anim.listening=false; stopMeter();
     if(my!==G.collectSeq) return;
     setMic('idle','Mic ready');
@@ -818,6 +795,7 @@ function startListening(){
   })();
 }
 function handleVoiceResult(res){
+  console.log('Voice Result:', res);
   if(G.phase!=='collect') return;
   if(res.error){
     if(res.error==='aborted'||res.error==='start-failed') return;
